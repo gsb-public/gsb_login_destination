@@ -1,0 +1,4 @@
+name = GSB Login Destination
+description = Alters the login destination of users.
+package = GSB
+core = 7.x
