@@ -10,7 +10,7 @@
  */
 function gsb_login_destination_user_login(&$edit, $account) {
   if (user_access('access workbench')) {
-    $GLOBALS['destination'] = "admin/workbench";
+    $GLOBALS['gsb_login_destination'] = "admin/workbench";
   }
   if (field_info_instance('node', 'field_sunetid', 'faculty')) {
     $query = new EntityFieldQuery('node');
@@ -20,7 +20,19 @@ function gsb_login_destination_user_login(&$edit, $account) {
       ->execute();
     if (!empty($results['node'])) {
       $nid = key($results['node']);
-      $GLOBALS['destination'] = "node/$nid/edit";
+      // Instead of calling drupal_goto() right now, store the destination in a
+      // global and use it later.
+      $GLOBALS['gsb_login_destination'] = "node/$nid/edit";
     }
+  }
+}
+
+/**
+ * Implements hook_drupal_goto_alter().
+ */
+function gsb_login_destination_drupal_goto_alter(&$path, &$options, &$http_response_code) {
+  if (isset($GLOBALS['gsb_login_destination'])) {
+    $path = $GLOBALS['gsb_login_destination'];
+    unset($GLOBALS['gsb_login_destination']);
   }
 }
