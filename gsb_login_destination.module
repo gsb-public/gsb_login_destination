@@ -12,18 +12,10 @@ function gsb_login_destination_user_login(&$edit, $account) {
   if (user_access('access workbench')) {
     $GLOBALS['gsb_login_destination'] = "admin/workbench";
   }
-  if (field_info_instance('node', 'field_sunetid', 'faculty')) {
-    $query = new EntityFieldQuery('node');
-    $results = $query
-      ->entityCondition('bundle', 'faculty')
-      ->fieldCondition('field_sunetid', 'value', $account->name)
-      ->execute();
-    if (!empty($results['node'])) {
-      $nid = key($results['node']);
-      // Instead of calling drupal_goto() right now, store the destination in a
-      // global and use it later.
-      $GLOBALS['gsb_login_destination'] = "node/$nid/edit";
-    }
+  if ($path = _gsb_login_destination_find_profile($account)) {
+    // Instead of calling drupal_goto() right now, store the destination in a
+    // global and use it later.
+    $GLOBALS['gsb_login_destination'] = $path;
   }
 }
 
@@ -34,5 +26,51 @@ function gsb_login_destination_drupal_goto_alter(&$path, &$options, &$http_respo
   if (isset($GLOBALS['gsb_login_destination'])) {
     $path = $GLOBALS['gsb_login_destination'];
     unset($GLOBALS['gsb_login_destination']);
+  }
+}
+
+/**
+ * Determines the profile for a given user.
+ *
+ * @param object $account
+ *   The user object.
+ *
+ * @return string|null
+ *   Either the URL for the profile, or NULL.
+ */
+function _gsb_login_destination_find_profile($account) {
+  // Check for faculty profile.
+  if (field_info_instance('node', 'field_sunetid', 'faculty')) {
+    $query = new EntityFieldQuery('node');
+    $results = $query
+      ->entityCondition('bundle', 'faculty')
+      ->fieldCondition('field_sunetid', 'value', $account->name)
+      ->execute();
+    if (!empty($results['node'])) {
+      $nid = key($results['node']);
+      return "node/$nid/edit";
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function gsb_login_destination_menu_alter(&$items) {
+  if (isset($items['user'])) {
+    $items['user']['page callback'] = 'gsb_login_destination_user_page';
+  }
+}
+
+/**
+ * Page callback: Redirect to the faculty page if available.
+ */
+function gsb_login_destination_user_page() {
+  global $user;
+  if ($user->uid && $path = _gsb_login_destination_find_profile($user)) {
+    drupal_goto($path);
+  }
+  else {
+    return user_page();
   }
 }
