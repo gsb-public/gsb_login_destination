@@ -9,13 +9,19 @@
  * Implements hook_user_login().
  */
 function gsb_login_destination_user_login(&$edit, $account) {
-  if (user_access('access workbench')) {
-    $GLOBALS['gsb_login_destination'] = "admin/workbench";
+  $current_path = request_path();
+  if ($current_path == 'user' || $current_path == 'user/login') {
+    if (user_access('access workbench')) {
+      $GLOBALS['gsb_login_destination'] = "admin/workbench";
+    }
+    if ($path = _gsb_login_destination_find_profile($account)) {
+      // Instead of calling drupal_goto() right now, store the destination in a
+      // global and use it later.
+      $GLOBALS['gsb_login_destination'] = $path;
+    }
   }
-  if ($path = _gsb_login_destination_find_profile($account)) {
-    // Instead of calling drupal_goto() right now, store the destination in a
-    // global and use it later.
-    $GLOBALS['gsb_login_destination'] = $path;
+  else {
+    $GLOBALS['gsb_login_destination'] = $current_path;
   }
 }
 
